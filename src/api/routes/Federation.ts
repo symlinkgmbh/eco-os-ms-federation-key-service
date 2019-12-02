@@ -50,26 +50,10 @@ export class FederationRoute extends AbstractRoutes implements PkApi.IRoute {
   }
 
   public activate(): void {
-    this.resolveDns();
     this.loadPublicKeyFromRemoteUser();
     this.validateFederationRequest();
     this.getUsersKeys();
     this.initFederationForDomain();
-  }
-
-  private resolveDns(): void {
-    this.getApp()
-      .route("/federation/lookup")
-      .post((req: Request, res: Response, next: NextFunction) => {
-        this.federationController
-          .resolve2ndLock(req)
-          .then((result) => {
-            res.send(result);
-          })
-          .catch((err) => {
-            next(err);
-          });
-      });
   }
 
   private loadPublicKeyFromRemoteUser(): void {

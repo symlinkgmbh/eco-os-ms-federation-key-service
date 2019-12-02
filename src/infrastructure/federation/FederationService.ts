@@ -21,15 +21,13 @@ import { IFederationService } from "./IFederationService";
 import dns from "dns";
 import { injectable, inject } from "inversify";
 import { injectConfigClient, injectLicenseClient } from "@symlinkde/eco-os-pk-core";
-import { MsConf, PkCore, MsFederation } from "@symlinkde/eco-os-pk-models";
+import { MsConf, PkCore, MsFederation, PkCrypt } from "@symlinkde/eco-os-pk-models";
 import { Log, LogLevel } from "@symlinkde/eco-os-pk-log";
 import Axios, { AxiosResponse } from "axios";
 import { CustomRestError } from "@symlinkde/eco-os-pk-api";
-import { IFederationEncryptor } from "./IFederationEncryptor";
 import { FEDERATIONTYPES } from "./FederationTypes";
-import { CryptionUtils } from "@symlinkde/eco-os-pk-crypt";
+import { CryptionUtils, CryptoWorker } from "@symlinkde/eco-os-pk-crypt";
 import { IFederationStorage } from "./IFederationStorage";
-import { StaticFederationUtils } from "./StaticFederationUtils";
 import Config from "config";
 
 @injectLicenseClient
@@ -41,12 +39,12 @@ export class FederationService implements IFederationService {
 
   private publicFederationHost!: MsConf.IFederationConfig;
   private licenseChecksum!: string;
+  private cryptoWorker: PkCrypt.ICryptoWorker;
 
-  private encryptor: IFederationEncryptor;
   private storage: IFederationStorage;
 
-  public constructor(@inject(FEDERATIONTYPES.IFederationEncryptor) encryptor: IFederationEncryptor, @inject(FEDERATIONTYPES.IFederationStorage) storage: IFederationStorage) {
-    this.encryptor = encryptor;
+  public constructor(@inject(FEDERATIONTYPES.IFederationStorage) storage: IFederationStorage) {
+    this.cryptoWorker = new CryptoWorker();
     this.storage = storage;
   }
 
@@ -214,7 +212,7 @@ export class FederationService implements IFederationService {
       const publicKey = await this.loadPublicKeyFromFederationService();
       const checksum = await this.loadLicenseChecksum();
       const host = await this.loadFederationHost();
-      const requestBody = await this.encryptor.encryptBody<any>(publicKey, { domain });
+      const requestBody = await this.cryptoWorker.encryptBody<any>({ domain }, publicKey);
       const bodyChecksum = CryptionUtils.buildChecksumFromBody(requestBody);
       return await Axios.post(`https://${host.publicFederationSerivce}/api/v1/federation`, requestBody, {
         headers: {
@@ -249,7 +247,7 @@ export class FederationService implements IFederationService {
       encryptedDomain: domain,
     };
 
-    const cryptedFederationObject: any = await this.encryptor.encryptBody(publicFederationKey, requestObject);
+    const cryptedFederationObject: any = await this.cryptoWorker.encryptBody<any>(requestObject, publicFederationKey);
     const cryptedFederationChecksum = CryptionUtils.buildChecksumFromBody(cryptedFederationObject);
     try {
       return await Axios.post(

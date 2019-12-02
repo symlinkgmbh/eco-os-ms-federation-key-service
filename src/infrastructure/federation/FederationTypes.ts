@@ -19,10 +19,8 @@
 
 const FEDERATIONTYPES = {
   IFederationService: Symbol.for("IFederationService"),
-  IFederationEncryptor: Symbol.for("IFederationEncryptor"),
   IFederationStorage: Symbol.for("IFederationStorage"),
   IFederationValidator: Symbol.for("IFederationValidator"),
-  IFederationContentHandler: Symbol.for("IFederationContentHandler"),
 };
 
 export { FEDERATIONTYPES };

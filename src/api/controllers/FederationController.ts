@@ -17,27 +17,15 @@
 
 
 
-import { injectFederationService, IFederationService, injectFederationValidator, injectFederationContentHandler } from "../../infrastructure/federation";
+import { injectFederationService, IFederationService, injectFederationValidator } from "../../infrastructure/federation";
 import { Request } from "express";
-import { RestError } from "@symlinkde/eco-os-pk-api";
-import { SrvRecord } from "dns";
 import { IFederationValidator } from "../../infrastructure/federation/IFederationValidator";
 
 @injectFederationService
 @injectFederationValidator
-@injectFederationContentHandler
 export class FederationController {
   private federationService!: IFederationService;
   private federationValidator!: IFederationValidator;
-
-  public async resolve2ndLock(req: Request): Promise<SrvRecord[]> {
-    const result = await this.federationService.resolve2ndLock(req.body.domain);
-    if (result === null) {
-      throw new RestError("federation-service", "2ndlock not found", 404);
-    }
-
-    return result;
-  }
 
   public async loadRemoteUserPublicKeys(req: Request): Promise<any> {
     return await this.federationService.resolveRemoteUserKeys(req.body.email);
